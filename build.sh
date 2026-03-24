@@ -249,6 +249,7 @@ setup_ksu() {
         echo "CONFIG_KPM=n" >> $MAIN_DEFCONFIG
         echo "CONFIG_KSU_MANUAL_HOOK=y" >> $MAIN_DEFCONFIG
         echo "CONFIG_KSU_SUSFS=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
     elif [[ "$KSU_SELECTED" == "zako_susfs" ]]; then
         # Run Setup Script
         curl -LSs $KSU_SETUP_URI | bash -s $KSU_BRANCH
@@ -270,6 +271,7 @@ setup_ksu() {
         echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=n" >> $MAIN_DEFCONFIG
         echo "CONFIG_KSU_SUSFS_SUS_MAP=n" >> $MAIN_DEFCONFIG
         echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
     elif [[ "$KSU_SELECTED" == "" ]]; then
         echo "No KernelSU to set up."
     fi
