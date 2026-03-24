@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         build-type: [sweet]
-        ksu-type: [blxx, zako, none]
+        ksu-type: [zako, zako_susfs, none]
 
     steps:
       - uses: actions/checkout@v6
@@ -50,12 +50,12 @@ jobs:
       - name: Compile the kernel
         run: |
           echo "Determining KSU type..."
-          if [[ "${{ matrix.ksu-type }}" == "blxx" ]]; then
-            echo "Using KSU_BLXX"
-            export KSU_CHOICE="KSU_BLXX"
-          elif [[ "${{ matrix.ksu-type }}" == "zako" ]]; then
+          if [[ "${{ matrix.ksu-type }}" == "zako" ]]; then
             echo "Using KSU_ZAKO"
             export KSU_CHOICE="KSU_ZAKO"
+          elif [[ "${{ matrix.ksu-type }}" == "zako_susfs" ]]; then
+            echo "Using KSU_ZAKO_SUSFS"
+            export KSU_CHOICE="KSU_ZAKO_SUSFS"
           elif [[ "${{ matrix.ksu-type }}" == "none" ]]; then
             echo "No KSU will be used"
             export KSU_CHOICE="NONE"
