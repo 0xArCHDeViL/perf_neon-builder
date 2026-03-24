@@ -14,7 +14,7 @@ jobs:
       date: ${{ steps.ts.outputs.DATE }}
     strategy:
       matrix:
-        build-type: [davinci, sweet, tucana, violet]
+        build-type: [sweet]
         ksu-type: [blxx, next, none]
 
     steps:
@@ -65,14 +65,8 @@ jobs:
           fi
           cd android_kernel_xiaomi_sm6150/
           echo "Starting to compile..."
-          if [[ "${{ matrix.build-type }}" == "davinci" ]]; then
-            ./build.sh davinci --ksu=$KSU_CHOICE
-          elif [[ "${{ matrix.build-type }}" == "sweet" ]]; then
+          if [[ "${{ matrix.build-type }}" == "sweet" ]]; then
             ./build.sh sweet --ksu=$KSU_CHOICE
-          elif [[ "${{ matrix.build-type }}" == "tucana" ]]; then
-            ./build.sh tucana --ksu=$KSU_CHOICE
-          elif [[ "${{ matrix.build-type }}" == "violet" ]]; then
-            ./build.sh violet --ksu=$KSU_CHOICE
           fi
           cd ..
 
@@ -85,26 +79,11 @@ jobs:
           cp android_kernel_xiaomi_sm6150/out/arch/arm64/boot/Image.gz AnyKernel3/
           cp android_kernel_xiaomi_sm6150/out/arch/arm64/boot/dtb.img AnyKernel3/
           cp android_kernel_xiaomi_sm6150/out/arch/arm64/boot/dtbo.img AnyKernel3/
-          if [[ "${{ matrix.build-type }}" == "davinci" ]]; then
-            sed -i 's/supported.versions=11-16/supported.versions=11-16/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name1=sweet/device.name1=davinci/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name2=sweetin/device.name2=davinciin/' AnyKernel3/anykernel.sh
-            sed -i 's/sweet (sm6150)/davinci (sm6150)/g' AnyKernel3/banner
-          elif [[ "${{ matrix.build-type }}" == "sweet" ]]; then
+          if [[ "${{ matrix.build-type }}" == "sweet" ]]; then
             sed -i 's/supported.versions=11-16/supported.versions=11-16/' AnyKernel3/anykernel.sh
             sed -i 's/device.name1=sweet/device.name1=sweet/' AnyKernel3/anykernel.sh
             sed -i 's/device.name2=sweetin/device.name2=sweetin/' AnyKernel3/anykernel.sh
             sed -i 's/sweet (sm6150)/sweet (sm6150)/g' AnyKernel3/banner
-          elif [[ "${{ matrix.build-type }}" == "tucana" ]]; then
-            sed -i 's/supported.versions=11-16/supported.versions=11-16/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name1=sweet/device.name1=tucana/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name2=sweetin/device.name2=tucana/' AnyKernel3/anykernel.sh
-            sed -i 's/sweet (sm6150)/tucana (sm6150)/g' AnyKernel3/banner
-          elif [[ "${{ matrix.build-type }}" == "violet" ]]; then
-            sed -i 's/supported.versions=11-16/supported.versions=11-16/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name1=sweet/device.name1=violet/' AnyKernel3/anykernel.sh
-            sed -i 's/device.name2=sweetin/device.name2=violet/' AnyKernel3/anykernel.sh
-            sed -i 's/sweet (sm6150)/violet (sm6150)/g' AnyKernel3/banner
           fi
 
       - name: Pack & upload artifacts (All builds)
