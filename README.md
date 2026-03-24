@@ -18,10 +18,10 @@ Currently added features:
 
 # Compatibility
 Currently supported device:   
-- Redmi Note 10 Pro/Pro Max (sweet)   
-- Redmi Note 8/8T (ginkgo/willow)   
-- Redmi 4A/5A/Note 5A Lite/Y1 Lite (mi8917)
-- Redmi 3/3S/4/4X/Note 5A Prime/Y1 Prime (mi8937)   
+- Redmi Note 10 Pro/Pro Max ([sweet](https://download.lineageos.org/devices/sweet/builds))   
+- Redmi Note 8/8T ([ginkgo/willow](https://download.lineageos.org/devices/ginkgo/builds))   
+- Redmi 4A/5A/Note 5A Lite/Y1 Lite ([mi8917](https://download.lineageos.org/devices/Mi8917/builds))
+- Redmi 3/3S/4/4X/Note 5A Prime/Y1 Prime ([mi8937](https://download.lineageos.org/devices/Mi8937/builds))   
 
 # Credits
 Patches & buildscript
