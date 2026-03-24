@@ -34,21 +34,24 @@ setup_environment() {
         echo "Invalid DEVICE_IMPORT. Use a valid device name."
         exit 1
     fi
-    # KernelSU Settings
-    if [[ "$KERNELSU_SELECTOR" == "--ksu=KSU_BLXX" ]]; then
-        export KSU_SETUP_URI="https://github.com/backslashxx/KernelSU/raw/refs/heads/master/kernel/setup.sh"
-        export KSU_BRANCH="master"
+    # KernelSU Settings - v1.5
+    if [[ "$KERNELSU_SELECTOR" == "--ksu=KSU_ZAKO" ]]; then
+        export KSU_SELECTED="zako"
+        export KSU_SETUP_URI="https://github.com/ReSukiSU/ReSukiSU/raw/refs/heads/main/kernel/setup.sh"
+        export KSU_BRANCH="main"
         export KSU_GENERAL_PATCH="https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd/raw/refs/heads/mainline/Patches/syscall_hook_patches.sh"
-    elif [[ "$KERNELSU_SELECTOR" == "--ksu=KSU_ZAKO" ]]; then
+    elif [[ "$KERNELSU_SELECTOR" == "--ksu=KSU_ZAKO_SUSFS" ]]; then
+        export KSU_SELECTED="zako_susfs"
         export KSU_SETUP_URI="https://github.com/ReSukiSU/ReSukiSU/raw/refs/heads/main/kernel/setup.sh"
         export KSU_BRANCH="main"
         export KSU_GENERAL_PATCH="https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd/raw/refs/heads/mainline/Patches/syscall_hook_patches.sh"
     elif [[ "$KERNELSU_SELECTOR" == "--ksu=NONE" ]]; then
+        export KSU_SELECTED=""
         export KSU_SETUP_URI=""
         export KSU_BRANCH=""
         export KSU_GENERAL_PATCH=""
     else
-        echo "Invalid KernelSU selector. Use --ksu=KSU_BLXX, --ksu=KSU_ZAKO, or --ksu=NONE."
+        echo "Invalid KernelSU selector. Use, --ksu=KSU_ZAKO, --ksu=KSU_ZAKO_SUSFS, or --ksu=NONE."
         exit 1
     fi
 }
@@ -129,8 +132,12 @@ setup_specific() {
         echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> $MAIN_DEFCONFIG
         # KernelSU umount patch
         export KSU_UMOUNT_PATCH="https://github.com/tbyool/android_kernel_xiaomi_sm6150/commit/64db0dfa2f8aa6c519dbf21eb65c9b89643cda3d.patch"
-        # Apply umount backport and susfs
+        # Apply umount backport
         wget -qO- $KSU_UMOUNT_PATCH | patch -s -p1
+        # SUSFS kernel patch
+        export SUSFS_PATCH="https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd/raw/refs/heads/mainline/Patches/Patch/susfs_patch_to_4.14.patch"
+        # Apply SUSFS patch
+        wget -qO- $SUSFS_PATCH | patch -s -p1 --fuzz=5
     else
         echo "No specific patches to apply for $SELECTED_DEVICE."
     fi
@@ -138,35 +145,42 @@ setup_specific() {
 
 # Add KernelSU function
 setup_ksu() {
-    if [ -n "$KSU_SETUP_URI" ]; then
-        echo "Setting up KernelSU..."
-        if [[ "$KSU_SETUP_URI" == *"backslashxx/KernelSU"* ]]; then
-            # Run Setup Script
-            curl -LSs $KSU_SETUP_URI | bash -s $KSU_BRANCH
-            # Apply manual hook
-            # curl -LSs $KSU_GENERAL_PATCH | bash
-            # Manual Config Enablement
-            echo "CONFIG_KSU=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KSU_TAMPER_SYSCALL_TABLE=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KPROBES=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_HAVE_KPROBES=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KPROBE_EVENTS=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KRETPROBES=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
-        elif [[ "$KSU_SETUP_URI" == *"ReSukiSU/ReSukiSU"* ]]; then
-            # Run Setup Script
-            curl -LSs $KSU_SETUP_URI | bash -s $KSU_BRANCH
-            # Apply manual hook
-            curl -LSs $KSU_GENERAL_PATCH | bash
-            # Manual Config Enablement
-            echo "CONFIG_KSU=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KPM=n" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> $MAIN_DEFCONFIG
-            echo "CONFIG_KSU_SUSFS=n" >> $MAIN_DEFCONFIG
-            echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
-        fi
-    else
+    echo "Setting up KernelSU..."
+    if [[ "$KSU_SELECTED" == "zako" ]]; then
+        # Run Setup Script
+        curl -LSs $KSU_SETUP_URI | bash -s $KSU_BRANCH
+        # Apply manual hook
+        curl -LSs $KSU_GENERAL_PATCH | bash
+        # Manual Config Enablement
+        echo "CONFIG_KSU=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KPM=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_MANUAL_HOOK=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
+    elif [[ "$KSU_SELECTED" == "zako_susfs" ]]; then
+        # Run Setup Script
+        curl -LSs $KSU_SETUP_URI | bash -s $KSU_BRANCH
+        # Apply manual hook
+        curl -LSs $KSU_GENERAL_PATCH | bash
+        # Manual Config Enablement
+        echo "CONFIG_KSU=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_MULTI_MANAGER_SUPPORT=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KPM=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_MANUAL_HOOK=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> $MAIN_DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=n" >> $MAIN_DEFCONFIG
+        echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> $MAIN_DEFCONFIG
+    elif [[ "$KSU_SELECTED" == "" ]]; then
         echo "No KernelSU to set up."
     fi
 }
