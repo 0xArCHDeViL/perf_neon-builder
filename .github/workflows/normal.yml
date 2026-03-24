@@ -1,4 +1,4 @@
-name: Weekly (Normal)
+name: Weekly
 
 on:
   workflow_dispatch:
