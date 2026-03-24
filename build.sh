@@ -141,6 +141,11 @@ setup_specific() {
             # Apply SUSFS patch
             wget -qO- $SUSFS_PATCH | patch -s -p1 --fuzz=5
         fi
+        # Baseband Guard exports
+        export BBG_SETUP_URI="https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh"
+        # Apply Baseband Guard
+        curl -LSs $BBG_SETUP_URI | bash
+        echo "CONFIG_BBG=y" >> $MAIN_DEFCONFIG
     else
         echo "No specific patches to apply for $SELECTED_DEVICE."
     fi
