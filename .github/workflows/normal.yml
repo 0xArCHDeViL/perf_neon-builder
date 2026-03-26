@@ -2,17 +2,6 @@ name: Weekly
 
 on:
   workflow_dispatch:
-    inputs:
-      clang-type:
-        description: 'Clang toolchain to use'
-        required: false
-        default: 'lineage'
-        type: choice
-        options:
-          - lineage
-          - lilium
-          - zyc
-          - kaleidoscope
   schedule:
     - cron: '5 3 * * 0'
 
@@ -40,16 +29,6 @@ jobs:
           TIME=$(date +'%s')
           echo "DATE=$DATE" >> $GITHUB_OUTPUT
           echo "TIME=$TIME" >> $GITHUB_OUTPUT
-
-      - name: Determine clang type
-        id: clang
-        run: |
-          # On schedule trigger, default to lineage
-          CLANG_TYPE="${{ github.event.inputs.clang-type }}"
-          if [ -z "$CLANG_TYPE" ]; then
-            CLANG_TYPE="lineage"
-          fi
-          echo "CLANG_TYPE=$CLANG_TYPE" >> $GITHUB_OUTPUT
 
       - name: Install build dependencies
         run: |
@@ -112,15 +91,15 @@ jobs:
           echo "Starting to compile..."
           if [[ "${{ matrix.build-type }}" == "sweet" ]]; then
             cd android_kernel_xiaomi_sm6150/
-            ./build.sh sweet --ksu=$KSU_CHOICE --clang=${{ steps.clang.outputs.CLANG_TYPE }}
+            ./build.sh sweet --ksu=$KSU_CHOICE
             cd ..
           elif [[ "${{ matrix.build-type }}" == "ginkgo" ]]; then
             cd android_kernel_xiaomi_sm6125/
-            ./build.sh ginkgo --ksu=$KSU_CHOICE --clang=${{ steps.clang.outputs.CLANG_TYPE }}
+            ./build.sh ginkgo --ksu=$KSU_CHOICE
             cd ..
           elif [[ "${{ matrix.build-type }}" == "mi89x7" ]]; then
             cd android_kernel_xiaomi_msm8937/
-            ./build.sh mi89x7 --ksu=$KSU_CHOICE --clang=${{ steps.clang.outputs.CLANG_TYPE }}
+            ./build.sh mi89x7 --ksu=$KSU_CHOICE
             cd ..
           else
             echo "Invalid build type: ${{ matrix.build-type }}"
@@ -163,7 +142,7 @@ jobs:
 
       - name: Pack kernel with AnyKernel3
         run: |
-          ZIPNAME="perf-neon-${{ matrix.build-type }}-weekly-${{ matrix.ksu-type }}-${{ steps.clang.outputs.CLANG_TYPE }}-${{ steps.ts.outputs.DATE }}-${{ steps.ts.outputs.TIME }}.zip"
+          ZIPNAME="perf-neon-${{ matrix.build-type }}-weekly-${{ matrix.ksu-type }}-${{ steps.ts.outputs.DATE }}-${{ steps.ts.outputs.TIME }}.zip"
           cd AnyKernel3
           zip -rq9 "../$ZIPNAME" ./*
           cd ..
@@ -171,7 +150,7 @@ jobs:
       - name: Upload artifacts (All builds)
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.build-type }}-${{ matrix.ksu-type }}-${{ steps.clang.outputs.CLANG_TYPE }}
+          name: ${{ matrix.build-type }}-${{ matrix.ksu-type }}
           path: |
             *.zip
 
@@ -196,15 +175,6 @@ jobs:
           FANCYDATE=$(date +'%Y/%m/%d')
           echo "FANCYDATE=$FANCYDATE" >> $GITHUB_OUTPUT
 
-      - name: Determine clang type for release notes
-        id: clang
-        run: |
-          CLANG_TYPE="${{ github.event.inputs.clang-type }}"
-          if [ -z "$CLANG_TYPE" ]; then
-            CLANG_TYPE="lineage"
-          fi
-          echo "CLANG_TYPE=$CLANG_TYPE" >> $GITHUB_OUTPUT
-
       - name: Create Release and Upload builds
         uses: softprops/action-gh-release@v2
         env:
@@ -217,8 +187,7 @@ jobs:
           body: |
             > [!NOTE]   
             > - The kernel supports Android 11 to 16.   
-            > - ReSukiSU latest manager can be found in [here](https://resukisu.github.io/guide/install.html#Get-manager).
-            > - Built with clang: **${{ steps.clang.outputs.CLANG_TYPE }}**
+            > - ReSukiSU latest manager can be found in [here](https://resukisu.github.io/guide/install.html#Get-manager).    
                
             > [!IMPORTANT]
             > - "zako" build contains ReSukiSU (Recommended).   
