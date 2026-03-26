@@ -6,18 +6,43 @@ setup_environment() {
     # Imports
     local DEVICE_IMPORT="$1"
     local KERNELSU_SELECTOR="$2"
+    local CLANG_SELECTOR="$3"
     # Maintainer info
     export KBUILD_BUILD_USER=flexes-compile
     export KBUILD_BUILD_HOST=riaru.com
     export GIT_NAME="$KBUILD_BUILD_USER"
     export GIT_EMAIL="$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST"
-    # GCC and Clang settings
-    export CLANG_REPO_URI="https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b.git"
+    # GCC settings (always from LineageOS)
     export GCC_64_REPO_URI="https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git"
     export GCC_32_REPO_URI="https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9.git"
-    export CLANG_DIR=$PWD/clang
     export GCC64_DIR=$PWD/gcc64
     export GCC32_DIR=$PWD/gcc32
+    # Clang settings - v1.0
+    export CLANG_DIR=$PWD/clang
+    if [[ "$CLANG_SELECTOR" == "--clang=lineage" || -z "$CLANG_SELECTOR" ]]; then
+        export CLANG_SELECTED="lineage"
+        export CLANG_REPO_URI="https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b.git"
+        export CLANG_ARCHIVE_URI=""
+    elif [[ "$CLANG_SELECTOR" == "--clang=lilium" ]]; then
+        export CLANG_SELECTED="lilium"
+        export CLANG_REPO_URI=""
+        export CLANG_ARCHIVE_URI="https://github.com/liliumproject/clang/releases/download/20250912/lilium_clang-20250912.tar.gz"
+        export CLANG_ARCHIVE_EXT="tar.gz"
+    elif [[ "$CLANG_SELECTOR" == "--clang=zyc" ]]; then
+        export CLANG_SELECTED="zyc"
+        export CLANG_REPO_URI=""
+        export CLANG_ARCHIVE_URI="https://github.com/ZyCromerZ/Clang/releases/download/23.0.0git-20260130-release/Clang-23.0.0git-20260130.tar.gz"
+        export CLANG_ARCHIVE_EXT="tar.gz"
+    elif [[ "$CLANG_SELECTOR" == "--clang=kaleidoscope" ]]; then
+        export CLANG_SELECTED="kaleidoscope"
+        export CLANG_REPO_URI=""
+        export CLANG_ARCHIVE_URI="https://github.com/PurrrsLitterbox/LLVM-weekly/releases/download/20260322-0739-WIB/clang.tar.zst"
+        export CLANG_ARCHIVE_EXT="tar.zst"
+    else
+        echo "Invalid clang selector: $CLANG_SELECTOR"
+        echo "Valid options: --clang=lineage (default), --clang=lilium, --clang=zyc, --clang=kaleidoscope"
+        exit 1
+    fi
     export PATH="$CLANG_DIR/bin/:$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH"
     # Device Settings - v2.2
     export SELECTED_DEVICE="$DEVICE_IMPORT"
@@ -76,17 +101,40 @@ setup_environment() {
 # Setup toolchain function
 setup_toolchain() {
     echo "Setting up toolchain..."
-    if [ ! -d "$PWD/clang" ]; then
-        git clone $CLANG_REPO_URI --depth=1 clang &> /dev/null
+    # Setup Clang
+    if [[ "$CLANG_SELECTED" == "lineage" ]]; then
+        if [ ! -d "$PWD/clang" ]; then
+            echo "Cloning LineageOS clang..."
+            git clone $CLANG_REPO_URI --depth=1 clang &> /dev/null
+        else
+            echo "Local clang dir found, using it."
+        fi
     else
-        echo "Local clang dir found, using it."
+        if [ ! -d "$PWD/clang" ]; then
+            echo "Downloading $CLANG_SELECTED clang..."
+            mkdir -p clang
+            CLANG_ARCHIVE="clang-download.$CLANG_ARCHIVE_EXT"
+            wget -q --show-progress -O "$CLANG_ARCHIVE" "$CLANG_ARCHIVE_URI"
+            if [[ "$CLANG_ARCHIVE_EXT" == "tar.gz" ]]; then
+                tar -xzf "$CLANG_ARCHIVE" -C clang --strip-components=1
+            elif [[ "$CLANG_ARCHIVE_EXT" == "tar.zst" ]]; then
+                tar -I zstd -xf "$CLANG_ARCHIVE" -C clang --strip-components=1
+            fi
+            rm -f "$CLANG_ARCHIVE"
+            echo "$CLANG_SELECTED clang ready."
+        else
+            echo "Local clang dir found, using it."
+        fi
     fi
+    # Setup GCC (always from LineageOS)
     if [ ! -d "$PWD/gcc64" ]; then
+        echo "Cloning GCC64..."
         git clone $GCC_64_REPO_URI --depth=1 gcc64 &> /dev/null
     else
         echo "Local gcc64 dir found, using it."
     fi
     if [ ! -d "$PWD/gcc32" ]; then
+        echo "Cloning GCC32..."
         git clone $GCC_32_REPO_URI --depth=1 gcc32 &> /dev/null
     else
         echo "Local gcc32 dir found, using it."
@@ -163,11 +211,6 @@ setup_specific() {
         # Apply Baseband Guard
         curl -LSs $BBG_SETUP_URI | bash
         echo "CONFIG_BBG=y" >> $MAIN_DEFCONFIG
-        # HideStuff Exports
-        export HIDESTUFF_PATCH="https://github.com/WildKernels/kernel_patches/raw/refs/heads/main/69_hide_stuff.patch"
-        # Apply HideStuff
-        echo "Applying HideStuff patches..."
-        wget -qO- $HIDESTUFF_PATCH | patch -s -p1 --fuzz=5
     elif [[ "$SELECTED_DEVICE" == "ginkgo" ]]; then
         # DTC Upgrade Exports
         export DTC_PATCH1="https://github.com/LineageOS/android_kernel_xiaomi_sm6150/commit/e207247aa4553fff7190dde5dabb50aec400b513.patch"
@@ -192,7 +235,7 @@ setup_specific() {
         wget -qO- $DTBO_PATCH5 | patch -s -p1
         wget -qO- $DTBO_PATCH6 | patch -s -p1
         # LTO Exports
-        export LTO_PATCH="https://github.com/TheSillyOk/kernel_ls_patches/raw/refs/heads/master/fix_lto.patch"
+        export LTO_PATCH="https://github.com/TheSillyOk/kernel_ls__patches/raw/refs/heads/master/fix_lto.patch"
         # Apply LTO patches
         echo "Applying LTO patches..."
         wget -qO- $LTO_PATCH | patch -s -p1
@@ -217,11 +260,6 @@ setup_specific() {
         # Apply Baseband Guard
         curl -LSs $BBG_SETUP_URI | bash
         echo "CONFIG_BBG=y" >> $MAIN_DEFCONFIG
-        # HideStuff Exports
-        export HIDESTUFF_PATCH="https://github.com/WildKernels/kernel_patches/raw/refs/heads/main/69_hide_stuff.patch"
-        # Apply HideStuff
-        echo "Applying HideStuff patches..."
-        wget -qO- $HIDESTUFF_PATCH | patch -s -p1 --fuzz=5
     elif [[ "$SELECTED_DEVICE" == "mi89x7" ]]; then
         # KernelSU umount patch
         export KSU_UMOUNT_PATCH="https://github.com/zeta96/android_kernel_xiaomi_msm8937/commit/d6c848e0891c9d25ff747c11027c205ac788db46.patch"
@@ -240,11 +278,6 @@ setup_specific() {
         curl -LSs $BBG_SETUP_URI | bash
         echo "CONFIG_BBG=y" >> $MAIN_DEFCONFIG
         sed -i '/CONFIG_LSM=/s/"$/ ,baseband_guard"/' $MAIN_DEFCONFIG
-        # HideStuff Exports
-        export HIDESTUFF_PATCH="https://github.com/WildKernels/kernel_patches/raw/refs/heads/main/69_hide_stuff.patch"
-        # Apply HideStuff
-        echo "Applying HideStuff patches..."
-        wget -qO- $HIDESTUFF_PATCH | patch -s -p1 --fuzz=5
     else
         echo "No specific patches to apply for $SELECTED_DEVICE."
     fi
@@ -395,14 +428,20 @@ compile_kernel() {
 
 # Main function
 main() {
-    # Check if all four arguments are valid
+    # Check if all arguments are valid
     echo "Validating input arguments..."
-    if [ $# -ne 2 ]; then
-        echo "Usage: $0 <DEVICE_IMPORT> <KERNELSU_SELECTOR>"
-        echo "Example: $0 sweet --ksu=KSU_BLXX"
+    if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+        echo "Usage: $0 <DEVICE_IMPORT> <KERNELSU_SELECTOR> [CLANG_SELECTOR]"
+        echo "Example: $0 sweet --ksu=KSU_ZAKO --clang=lilium"
+        echo ""
+        echo "Clang options:"
+        echo "  --clang=lineage        LineageOS clang r416183b (default)"
+        echo "  --clang=lilium         Lilium clang 20250912"
+        echo "  --clang=zyc            ZyC clang 23.0.0git-20260130"
+        echo "  --clang=kaleidoscope   Kaleidoscope LLVM 20260322"
         exit 1
     fi
-    setup_environment "$1" "$2"
+    setup_environment "$1" "$2" "$3"
     setup_toolchain
     setup_specific
     setup_ksu
@@ -411,4 +450,4 @@ main() {
 }
 
 # Run the main function
-main "$1" "$2"
+main "$1" "$2" "$3"
