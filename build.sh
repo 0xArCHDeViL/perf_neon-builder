@@ -97,10 +97,6 @@ setup_toolchain() {
 setup_specific() {
     echo "Applying device specific patches for $SELECTED_DEVICE..."
 
-    # KSU umount backport
-    export KSU_UMOUNT_PATCH="https://github.com/tbyool/android_kernel_xiaomi_sm6150/commit/64db0dfa2f8aa6c519dbf21eb65c9b89643cda3d.patch"
-    wget -qO- $KSU_UMOUNT_PATCH | patch -s -p1
-
     # SUSFS kernel patch (only for zako_susfs)
     if [[ "$KSU_SELECTED" == "zako_susfs" ]]; then
         export SUSFS_PATCH="https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd/raw/refs/heads/mainline/Patches/Patch/susfs_patch_to_4.14.patch"
