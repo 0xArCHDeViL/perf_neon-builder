@@ -99,9 +99,9 @@ setup_specific() {
     if [[ "$SELECTED_DEVICE" == "sweet" ]]; then
 
         # Custom Patches
-        export LAUM="https://github.com/manipvlator/kernel_xiaomi_sm6150/commit/5560600c70f9798b6bb81ec8f8e022f2a6088287.patch"
+        export LAUM1="https://github.com/manipvlator/kernel_xiaomi_sm6150/commit/5560600c70f9798b6bb81ec8f8e022f2a6088287.patch"
         echo "Applying custom patches..."
-        wget -q0- $LAUM | patch -s p1
+        wget -qO- $LAUM1 | patch -s -p1
         
         # Main LN8K Exports
         export LN8K_PATCH1="https://github.com/crdroidandroid/android_kernel_xiaomi_sm6150/commit/7b73f853977d2c016e30319dffb1f49957d30b40.patch"
