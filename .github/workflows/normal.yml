@@ -53,17 +53,21 @@ jobs:
         run: |
           echo "Determining KSU type..."
           if [[ "${{ matrix.ksu-type }}" == "zako" ]]; then
-            export KSU_CHOICE="KSU_ZAKO"
+          export KSU_CHOICE="KSU_ZAKO"
           elif [[ "${{ matrix.ksu-type }}" == "zako_susfs" ]]; then
-            export KSU_CHOICE="KSU_ZAKO_SUSFS"
+          export KSU_CHOICE="KSU_ZAKO_SUSFS"
           elif [[ "${{ matrix.ksu-type }}" == "none" ]]; then
-            export KSU_CHOICE="NONE"
+          export KSU_CHOICE="NONE"
           else
-            echo "Invalid KSU type: ${{ matrix.ksu-type }}"
-            exit 1
+          echo "Invalid KSU type: ${{ matrix.ksu-type }}"
+          exit 1
           fi
           echo "Starting to compile..."
           cd android_kernel_xiaomi_sm6150/
+    
+          # Generate default kernel configuration
+          make O=out ARCH=arm64 sweet_defconfig
+
           ./build.sh sweet --ksu=$KSU_CHOICE --clang=${{ matrix.clang-type }}
           cd ..
 
