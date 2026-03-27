@@ -97,17 +97,6 @@ setup_toolchain() {
 setup_specific() {
     echo "Applying device specific patches for $SELECTED_DEVICE..."
 
-    # LTO patch
-    export LTO_PATCH="https://github.com/TheSillyOk/kernel_ls_patches/raw/refs/heads/master/fix_lto.patch"
-    echo "Applying LTO patch..."
-    wget -qO- $LTO_PATCH | patch -s -p1
-    echo "CONFIG_LTO_CLANG=y" >> $MAIN_DEFCONFIG
-
-    # General configs
-    echo "Tuning default configs..."
-    echo "CONFIG_EROFS_FS=y" >> $MAIN_DEFCONFIG
-    echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> $MAIN_DEFCONFIG
-
     # KSU umount backport
     export KSU_UMOUNT_PATCH="https://github.com/tbyool/android_kernel_xiaomi_sm6150/commit/64db0dfa2f8aa6c519dbf21eb65c9b89643cda3d.patch"
     wget -qO- $KSU_UMOUNT_PATCH | patch -s -p1
@@ -118,11 +107,6 @@ setup_specific() {
         echo "Applying SUSFS patch..."
         wget -qO- $SUSFS_PATCH | patch -s -p1 --fuzz=5
     fi
-
-    # Baseband Guard
-    export BBG_SETUP_URI="https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh"
-    curl -LSs $BBG_SETUP_URI | bash
-    echo "CONFIG_BBG=y" >> $MAIN_DEFCONFIG
 }
 
 # Setup KernelSU
@@ -159,41 +143,6 @@ setup_ksu() {
     else
         echo "No KernelSU to set up."
     fi
-}
-
-# Pre-compile setup
-setup_precompile() {
-    echo "Applying O3 flags before compiling..."
-    sed -i 's/KBUILD_CFLAGS\s\++= -O2/KBUILD_CFLAGS   += -O3/g' Makefile
-    sed -i 's/LDFLAGS\s\++= -O2/LDFLAGS += -O3/g' Makefile
-
-    mkdir -p out
-
-    local MAKE_FLAGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu-"
-
-    make $MAKE_FLAGS $ACTUAL_MAIN_DEFCONFIG &> /dev/null
-
-    echo "Appending fragments to .config..."
-    for fragment in $COMMON_DEFCONFIG $DEVICE_DEFCONFIG $FEATURE_DEFCONFIG; do
-        if [ -f "arch/arm64/configs/$fragment" ]; then
-            echo "Merging $fragment..."
-            cat "arch/arm64/configs/$fragment" >> out/.config
-        else
-            echo "Warning: Fragment arch/arm64/configs/$fragment not found!"
-        fi
-    done
-
-    echo "CONFIG_LOCALVERSION=\"$KERNEL_NAME\"" >> out/.config
-
-    yes "" | make $MAKE_FLAGS olddefconfig &> /dev/null
-    yes "" | make $MAKE_FLAGS syncconfig &> /dev/null
-
-    echo "Cleaning up git before compiling..."
-    git config user.email $GIT_EMAIL
-    git config user.name $GIT_NAME
-    git config set advice.addEmbeddedRepo true
-    git add .
-    git commit -m "cleanup: applied patches before build" &> /dev/null
 }
 
 # Compile kernel
