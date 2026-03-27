@@ -7,8 +7,8 @@ setup_environment() {
     local DEVICE_IMPORT="$1"
     local KERNELSU_SELECTOR="$2"
     # Maintainer info
-    export KBUILD_BUILD_USER=flexes-compile
-    export KBUILD_BUILD_HOST=riaru.com
+    export KBUILD_BUILD_USER=archdevil
+    export KBUILD_BUILD_HOST=evilzone
     export GIT_NAME="$KBUILD_BUILD_USER"
     export GIT_EMAIL="$KBUILD_BUILD_USER@$KBUILD_BUILD_HOST"
     # GCC and Clang settings
@@ -200,6 +200,14 @@ setup_specific() {
         echo "Applying LTO patches..."
         wget -qO- $LTO_PATCH | patch -s -p1
         echo "CONFIG_LTO_CLANG=y" >> $MAIN_DEFCONFIG
+
+        # RapliVx Custom Patches (Added features)
+        export RAPLIVX_PATCH1="https://github.com/RapliVx/kernel_xiaomi_sweet-06c80e0a/commit/1e6347375d088ecc896aabb067131d0f9e3c0575.patch"
+        export RAPLIVX_PATCH2="https://github.com/RapliVx/kernel_xiaomi_sweet-06c80e0a/commit/b774fa5a964145376699eae929c2c6e8b8675047.patch"
+        echo "Applying RapliVx custom patches..."
+        wget -qO- $RAPLIVX_PATCH1 | patch -s -p1
+        wget -qO- $RAPLIVX_PATCH2 | patch -s -p1
+        
         # Apply general config patches
         echo "Tuning the rest of default configs..."
         echo "CONFIG_EROFS_FS=y" >> $MAIN_DEFCONFIG
