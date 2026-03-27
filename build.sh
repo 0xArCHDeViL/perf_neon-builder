@@ -141,6 +141,40 @@ setup_ksu() {
     fi
 }
 
+# Setup kernel configuration (precompile)
+setup_precompile() {
+    echo "Preparing kernel configuration..."
+    
+    # Create output directory
+    mkdir -p out
+    
+    # Merge defconfig files into .config
+    cat "$MAIN_DEFCONFIG" > out/.config
+    
+    if [[ -n "$COMMON_DEFCONFIG" ]]; then
+        cat "$COMMON_DEFCONFIG" >> out/.config
+    fi
+    
+    if [[ -n "$DEVICE_DEFCONFIG" ]]; then
+        cat "$DEVICE_DEFCONFIG" >> out/.config
+    fi
+    
+    if [[ -n "$FEATURE_DEFCONFIG" ]]; then
+        cat "$FEATURE_DEFCONFIG" >> out/.config
+    fi
+    
+    # Validate and finalize the configuration
+    echo "Finalizing kernel configuration..."
+    make -j$(nproc --all) \
+        O=out \
+        ARCH=arm64 \
+        LLVM=1 \
+        oldconfig
+    
+    echo "Kernel configuration completed."
+}
+
+
 # Compile kernel
 compile_kernel() {
     echo "Starting kernel compilation..."
