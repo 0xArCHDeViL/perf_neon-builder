@@ -141,39 +141,36 @@ setup_ksu() {
     fi
 }
 
-# Setup kernel configuration (precompile)
+# Pre-compile setup
 setup_precompile() {
-    echo "Preparing kernel configuration..."
-    
-    # Create output directory
     mkdir -p out
-    
-    # Merge defconfig files into .config
-    cat "$MAIN_DEFCONFIG" > out/.config
-    
-    if [[ -n "$COMMON_DEFCONFIG" ]]; then
-        cat "$COMMON_DEFCONFIG" >> out/.config
-    fi
-    
-    if [[ -n "$DEVICE_DEFCONFIG" ]]; then
-        cat "$DEVICE_DEFCONFIG" >> out/.config
-    fi
-    
-    if [[ -n "$FEATURE_DEFCONFIG" ]]; then
-        cat "$FEATURE_DEFCONFIG" >> out/.config
-    fi
-    
-    # Validate and finalize the configuration
-    echo "Finalizing kernel configuration..."
-    make -j$(nproc --all) \
-        O=out \
-        ARCH=arm64 \
-        LLVM=1 \
-        oldconfig
-    
-    echo "Kernel configuration completed."
-}
 
+    local MAKE_FLAGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu-"
+
+    make $MAKE_FLAGS $ACTUAL_MAIN_DEFCONFIG &> /dev/null
+
+    echo "Appending fragments to .config..."
+    for fragment in $COMMON_DEFCONFIG $DEVICE_DEFCONFIG $FEATURE_DEFCONFIG; do
+        if [ -f "arch/arm64/configs/$fragment" ]; then
+            echo "Merging $fragment..."
+            cat "arch/arm64/configs/$fragment" >> out/.config
+        else
+            echo "Warning: Fragment arch/arm64/configs/$fragment not found!"
+        fi
+    done
+
+    echo "CONFIG_LOCALVERSION=\"$KERNEL_NAME\"" >> out/.config
+
+    yes "" | make $MAKE_FLAGS olddefconfig &> /dev/null
+    yes "" | make $MAKE_FLAGS syncconfig &> /dev/null
+
+    echo "Cleaning up git before compiling..."
+    git config user.email $GIT_EMAIL
+    git config user.name $GIT_NAME
+    git config set advice.addEmbeddedRepo true
+    git add .
+    git commit -m "cleanup: applied patches before build" &> /dev/null
+}
 
 # Compile kernel
 compile_kernel() {
