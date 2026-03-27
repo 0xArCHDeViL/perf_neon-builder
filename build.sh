@@ -100,10 +100,8 @@ setup_specific() {
 
         # Custom Patches
         export LAUM="https://github.com/manipvlator/kernel_xiaomi_sm6150/commit/5560600c70f9798b6bb81ec8f8e022f2a6088287.patch"
-        export RAPLIVX_PATCH1="https://github.com/RapliVx/kernel_xiaomi_sweet-06c80e0a/commit/b774fa5a964145376699eae929c2c6e8b8675047.patch"
         echo "Applying custom patches..."
         wget -q0- $LAUM | patch -s p1
-        wget -qO- $RAPLIVX_PATCH1 | patch -s -p1
         
         # Main LN8K Exports
         export LN8K_PATCH1="https://github.com/crdroidandroid/android_kernel_xiaomi_sm6150/commit/7b73f853977d2c016e30319dffb1f49957d30b40.patch"
